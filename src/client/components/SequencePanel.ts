@@ -60,20 +60,31 @@ export class SequencePanel {
 
   render(): void {
     const currentPage = this.getCurrentPage();
-    const annos = annotationStore.getStore().annotations.filter(a => a.page_number === currentPage);
+    const store = annotationStore.getStore();
+    const annos = store.annotations.filter(a => a.page_number === currentPage);
+    const selectedId = store.selectedAnnotation?.id;
     this.list.innerHTML = '';
 
     annos.forEach((anno, i) => {
       const li = document.createElement('li');
       li.dataset.id = anno.id;
       li.draggable = true;
+
+      const isSelected = anno.id === selectedId;
+      const bgClass = isSelected ? 'bg-primary-100 border-primary-500' : 'bg-gray-100 border-transparent';
+
       li.className =
-        'flex items-center space-x-2 p-2 bg-gray-100 rounded cursor-move select-none';
+        `flex items-center space-x-2 p-2 rounded cursor-move select-none border-2 ${bgClass}`;
       li.innerHTML = `
         <span class="w-5 text-right">${i + 1}</span>
         <span class="flex-1 truncate text-xs">${anno.text || anno.type}</span>
         <button class="text-red-500 hover:text-red-700" title="Delete">&times;</button>
       `;
+      
+      li.addEventListener('click', () => {
+        annotationStore.selectAnnotation(anno);
+      });
+
       li.querySelector('button')!.addEventListener('click', e => {
         e.stopPropagation();
         annotationStore.deleteAnnotation(anno.id);

@@ -213,6 +213,15 @@ export class PdfViewer {
     box.className = 'annotation-box';
     box.dataset.annotationId = annotation.id;
     
+    if (annotationStore.getStore().selectedAnnotation?.id === annotation.id) {
+      box.classList.add('selected');
+    }
+    
+    box.addEventListener('click', (e) => {
+      e.stopPropagation();
+      annotationStore.selectAnnotation(annotation);
+    });
+
     // Use the canvas dimensions as a fallback if page dimensions are missing from the annotation data
     const page_width = annotation.page_width || this.canvas.width;
     const page_height = annotation.page_height || this.canvas.height;
@@ -455,6 +464,7 @@ export class PdfViewer {
 
   private handleMouseDown(event: MouseEvent): void {
     if (event.target === this.overlay) {
+      annotationStore.selectAnnotation(null);
       this.startCreatingAnnotation(event);
     }
   }
