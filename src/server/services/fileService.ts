@@ -1,4 +1,4 @@
-import { promises as fs } from 'fs';
+import { promises as fs, createReadStream, ReadStream } from 'fs';
 import path from 'path';
 import { Annotation, FileInfo } from '../../shared/types/annotation.js';
 
@@ -55,6 +55,12 @@ export class FileService {
     
     const content = await fs.readFile(filePath, 'utf-8');
     return JSON.parse(content) as any[];
+  }
+
+  getAnnotationStream(filename: string): ReadStream {
+    const safeName = this.sanitizeFilename(filename);
+    const filePath = path.join(this.outputDir, safeName);
+    return createReadStream(filePath, { encoding: 'utf-8' });
   }
 
   async getFileInfo(filename: string, type: 'pdf' | 'json'): Promise<FileInfo> {

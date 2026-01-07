@@ -78,15 +78,30 @@ router.get('/annotations/:filename', asyncHandler(async (req: Request, res: Resp
   if (!filename.endsWith('.json')) {
     throw new Error('Invalid file format');
   }
+
+  // Stream response to avoid loading entire file into memory
+  res.setHeader('Content-Type', 'application/json');
+  res.write('{"success":true,"data":');
   
-  const data = await fileService.loadAnnotations(filename);
+  const stream = fileService.getAnnotationStream(filename);
   
-  const response: ApiResponse<typeof data> = {
-    success: true,
-    data,
-  };
+  stream.on('error', (err) => {
+    // If headers haven't been sent, we can send an error response
+    if (!res.headersSent) {
+      res.status(500).json({ success: false, error: 'Failed to read file' });
+    } else {
+      // If stream fails mid-way, end response (client will see malformed JSON)
+      res.end(']}'); 
+      console.error('Stream error:', err);
+    }
+  });
+
+  stream.pipe(res, { end: false });
   
-  res.json(response);
+  stream.on('end', () => {
+    res.write('}');
+    res.end();
+  });
 }));
 
 // Get file info

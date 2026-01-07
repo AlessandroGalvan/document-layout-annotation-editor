@@ -39,7 +39,6 @@
   }
 
   .annotation-box:hover {
-    @apply border-primary-600 bg-opacity-30;
     z-index: 100;
   }
 
@@ -52,7 +51,6 @@
     @apply absolute w-3 h-3 bg-primary-600 border border-white rounded-full cursor-pointer opacity-0 pointer-events-none transition-opacity duration-200;
   }
 
-  .annotation-box:hover .resize-handle,
   .annotation-box.selected .resize-handle {
     @apply opacity-100 pointer-events-auto;
   }
@@ -97,7 +95,6 @@
     margin-left: 4px;
   }
 
-  .annotation-box:hover .annotation-dropdown,
   .annotation-box.selected .annotation-dropdown {
     @apply opacity-100 pointer-events-auto;
   }
@@ -107,7 +104,6 @@
     z-index: 1000;
   }
 
-  .annotation-box:hover .delete-btn,
   .annotation-box.selected .delete-btn {
     @apply opacity-100 pointer-events-auto;
   }
@@ -117,7 +113,6 @@
     z-index: 1002;
   }
 
-  .annotation-box:hover .type-toggle,
   .annotation-box.selected .type-toggle {
     @apply opacity-100 pointer-events-auto;
   }
@@ -127,7 +122,6 @@
     z-index: 1002;
   }
 
-  .annotation-box:hover .text-toggle,
   .annotation-box.selected .text-toggle {
     @apply opacity-100 pointer-events-auto;
   }
@@ -144,7 +138,6 @@
     min-width: 200px;
   }
 
-  .annotation-box:hover .text-input,
   .annotation-box.selected .text-input,
   .text-input:focus {
     @apply opacity-100 pointer-events-auto;
@@ -160,7 +153,6 @@
     z-index: 1000;
   }
 
-  .annotation-box:hover .seq-badge,
   .annotation-box.selected .seq-badge {
     @apply opacity-100 pointer-events-auto;
   }
