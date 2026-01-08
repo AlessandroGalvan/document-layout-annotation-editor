@@ -5,6 +5,7 @@ import { Annotation, FileInfo } from '../../shared/types/annotation.js';
 export class FileService {
   private readonly pdfsDir: string;
   private readonly outputDir: string;
+  private directoriesEnsured: boolean = false;
 
   constructor(baseDir: string = process.cwd()) {
     this.pdfsDir = path.join(baseDir, 'pdfs');
@@ -12,8 +13,12 @@ export class FileService {
   }
 
   async ensureDirectories(): Promise<void> {
-    await fs.mkdir(this.pdfsDir, { recursive: true });
-    await fs.mkdir(this.outputDir, { recursive: true });
+    if (this.directoriesEnsured) return;
+    await Promise.all([
+      fs.mkdir(this.pdfsDir, { recursive: true }),
+      fs.mkdir(this.outputDir, { recursive: true })
+    ]);
+    this.directoriesEnsured = true;
   }
 
   async listFiles(): Promise<{ pdfFiles: string[]; jsonFiles: string[] }> {

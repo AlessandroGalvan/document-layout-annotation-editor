@@ -54,10 +54,10 @@ router.post('/sync', validate(SyncRequestSchema), asyncHandler(async (req: Reque
   const localPath = fileService.getOutputPath(filename);
   const content = await fs.readFile(localPath, 'utf-8');
 
-  // 2. Find file in S3 to determine the key
+  // 2. Determine S3 key
   const s3 = getS3Service();
-  const existingKey = await s3.findFileKey(filename);
-  const s3Key = existingKey || filename; // Use existing key or place at root
+  // Optimization: use filename as key directly to avoid expensive bucket scanning
+  const s3Key = filename;
 
   // 3. Upload to S3
   await s3.uploadFile(s3Key, content);
