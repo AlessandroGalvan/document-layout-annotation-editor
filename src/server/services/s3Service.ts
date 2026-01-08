@@ -1,5 +1,4 @@
-import { S3Client, ListObjectsV2Command, PutObjectCommand } from '@aws-sdk/client-s3';
-import path from 'path';
+import { S3Client, PutObjectCommand, HeadObjectCommand } from '@aws-sdk/client-s3';
 
 export class S3Service {
   private s3: S3Client;
@@ -17,33 +16,23 @@ export class S3Service {
   }
 
   /**
-   * Searches the entire bucket for a file by its base name.
-   * @param filename The base name of the file to find (e.g., 'document1.json').
-   * @returns The full S3 key (path) if found, otherwise null.
+   * Checks if a file exists in S3 at the given key.
+   * Optimized to avoid scanning the bucket.
    */
-  async findFileKey(filename: string): Promise<string | null> {
-    let continuationToken: string | undefined;
-    do {
-      const command = new ListObjectsV2Command({
+  async checkFileExists(key: string): Promise<boolean> {
+    try {
+      const command = new HeadObjectCommand({
         Bucket: this.bucketName,
-        ContinuationToken: continuationToken,
+        Key: key,
       });
-
-      const response = await this.s3.send(command);
-
-      if (response.Contents) {
-        for (const object of response.Contents) {
-          if (object.Key && path.basename(object.Key) === filename) {
-            console.log(`Found existing file in S3 with key: ${object.Key}`);
-            return object.Key;
-          }
-        }
+      await this.s3.send(command);
+      return true;
+    } catch (error: any) {
+      if (error.name === 'NotFound' || error.$metadata?.httpStatusCode === 404) {
+        return false;
       }
-      continuationToken = response.NextContinuationToken;
-    } while (continuationToken);
-
-    console.log(`No file named '${filename}' found in S3 bucket. A new file will be created at the root.`);
-    return null;
+      throw error;
+    }
   }
 
   /**

@@ -235,7 +235,8 @@ export class PdfViewer {
     box.style.height = `${annotation.height * initialScaleY}px`;
     
     // Add resize handles
-    ['nw', 'ne', 'sw', 'se'].forEach(handle => {
+    const handles = ['nw', 'ne', 'sw', 'se', 'n', 's', 'e', 'w'];
+    handles.forEach(handle => {
       const handleEl = document.createElement('div');
       handleEl.className = `resize-handle ${handle}`;
       handleEl.dataset.handle = handle;
@@ -391,7 +392,13 @@ export class PdfViewer {
       })
       .resizable({
         ignoreFrom: 'input, textarea, select, .toggle-btn, .delete-btn',
-        edges: { left: true, right: true, bottom: true, top: true },
+        // Use explicit handles for better control
+        edges: { 
+          left: '.resize-handle.w, .resize-handle.nw, .resize-handle.sw', 
+          right: '.resize-handle.e, .resize-handle.ne, .resize-handle.se', 
+          bottom: '.resize-handle.s, .resize-handle.sw, .resize-handle.se', 
+          top: '.resize-handle.n, .resize-handle.nw, .resize-handle.ne' 
+        },
         listeners: {
           start: () => {
             annotationStore.selectAnnotation(annotation);
