@@ -60,6 +60,10 @@ class App {
                     <input id="snap-contents" type="checkbox" class="h-4 w-4 text-primary-600 border-gray-300 rounded">
                     <span>Snap to contents</span>
                   </label>
+                  <label class="inline-flex items-center space-x-1 text-sm text-gray-700">
+                    <input id="magic-select" type="checkbox" class="h-4 w-4 text-primary-600 border-gray-300 rounded">
+                    <span>Magic Select</span>
+                  </label>
                 </div>
                 <button id="seq-btn" class="btn-secondary">
                   <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -169,6 +173,15 @@ class App {
         const checked = (e.target as HTMLInputElement).checked;
         localStorage.setItem('snapToContents', checked ? '1' : '0');
         this.pdfViewer?.setSnapToContents(checked);
+      });
+    }
+
+    // Magic Select toggle
+    const magicSelectEl = document.getElementById('magic-select') as HTMLInputElement | null;
+    if (magicSelectEl) {
+      magicSelectEl.addEventListener('change', (e) => {
+        const checked = (e.target as HTMLInputElement).checked;
+        this.pdfViewer?.setMagicSelectMode(checked);
       });
     }
 

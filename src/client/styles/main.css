@@ -61,10 +61,6 @@
   .resize-handle.ne { @apply -top-1 -right-1 cursor-ne-resize; }
   .resize-handle.sw { @apply -bottom-1 -left-1 cursor-sw-resize; }
   .resize-handle.se { @apply -bottom-1 -right-1 cursor-se-resize; }
-  .resize-handle.n { @apply -top-1 left-1/2 -ml-1.5 cursor-n-resize; }
-  .resize-handle.s { @apply -bottom-1 left-1/2 -ml-1.5 cursor-s-resize; }
-  .resize-handle.e { @apply top-1/2 -right-1 -mt-1.5 cursor-e-resize; }
-  .resize-handle.w { @apply top-1/2 -left-1 -mt-1.5 cursor-w-resize; }
 
   .resize-overlay {
     @apply absolute border-2 border-dashed border-blue-500 bg-blue-100 bg-opacity-20 pointer-events-none;
