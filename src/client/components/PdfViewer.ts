@@ -16,6 +16,7 @@ export class PdfViewer {
   private startPoint: { x: number; y: number } | null = null;
   private selectionBox: HTMLElement | null = null;
   private snapToContents: boolean = false;
+  private isMagicSelectMode: boolean = false;
   private restoreFocus: {
     annotationId: string;
     selectionStart: number;
@@ -78,6 +79,15 @@ export class PdfViewer {
 
   setSnapToContents(enabled: boolean): void {
     this.snapToContents = enabled;
+  }
+
+  setMagicSelectMode(enabled: boolean): void {
+    this.isMagicSelectMode = enabled;
+    if (enabled) {
+      this.overlay.style.cursor = 'crosshair';
+    } else {
+      this.overlay.style.cursor = 'default';
+    }
   }
 
   async loadPdf(pdfUrl: string): Promise<void> {
@@ -234,8 +244,8 @@ export class PdfViewer {
     box.style.width = `${annotation.width * initialScaleX}px`;
     box.style.height = `${annotation.height * initialScaleY}px`;
     
-    // Add resize handles
-    const handles = ['nw', 'ne', 'sw', 'se', 'n', 's', 'e', 'w'];
+    // Add resize handles (reverted to 4 corners)
+    const handles = ['nw', 'ne', 'sw', 'se'];
     handles.forEach(handle => {
       const handleEl = document.createElement('div');
       handleEl.className = `resize-handle ${handle}`;
@@ -392,13 +402,7 @@ export class PdfViewer {
       })
       .resizable({
         ignoreFrom: 'input, textarea, select, .toggle-btn, .delete-btn',
-        // Use explicit handles for better control
-        edges: { 
-          left: '.resize-handle.w, .resize-handle.nw, .resize-handle.sw', 
-          right: '.resize-handle.e, .resize-handle.ne, .resize-handle.se', 
-          bottom: '.resize-handle.s, .resize-handle.sw, .resize-handle.se', 
-          top: '.resize-handle.n, .resize-handle.nw, .resize-handle.ne' 
-        },
+        edges: { left: true, right: true, bottom: true, top: true },
         listeners: {
           start: () => {
             annotationStore.selectAnnotation(annotation);
@@ -472,7 +476,87 @@ export class PdfViewer {
   private handleMouseDown(event: MouseEvent): void {
     if (event.target === this.overlay) {
       annotationStore.selectAnnotation(null);
-      this.startCreatingAnnotation(event);
+      if (this.isMagicSelectMode) {
+        const rect = this.overlay.getBoundingClientRect();
+        const x = event.clientX - rect.left;
+        const y = event.clientY - rect.top;
+        this.magicSelect(x, y);
+      } else {
+        this.startCreatingAnnotation(event);
+      }
+    }
+  }
+
+  private async magicSelect(x: number, y: number): Promise<void> {
+    const ctx = this.canvas.getContext('2d');
+    if (!ctx) return;
+
+    // Get image data for edge detection
+    const imageData = ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
+    const data = imageData.data;
+    const width = this.canvas.width;
+    const height = this.canvas.height;
+
+    // Helper to get pixel color
+    const getPixel = (px: number, py: number) => {
+      if (px < 0 || px >= width || py < 0 || py >= height) return null;
+      const i = (Math.floor(py) * width + Math.floor(px)) * 4;
+      return { r: data[i], g: data[i+1], b: data[i+2], a: data[i+3] };
+    };
+
+    const startColor = getPixel(x, y);
+    if (!startColor) return;
+
+    // Helper to check if color is similar (within tolerance)
+    const isSimilar = (c1: any, c2: any, tol: number = 30) => {
+      return Math.abs(c1.r - c2.r) < tol &&
+             Math.abs(c1.g - c2.g) < tol &&
+             Math.abs(c1.b - c2.b) < tol &&
+             Math.abs(c1.a - c2.a) < tol;
+    };
+
+    // Find boundaries by expanding until color changes
+    const findBound = (dx: number, dy: number) => {
+      let cx = x;
+      let cy = y;
+      while (cx >= 0 && cx < width && cy >= 0 && cy < height) {
+        const c = getPixel(cx, cy);
+        if (!c || !isSimilar(startColor, c)) break;
+        cx += dx;
+        cy += dy;
+      }
+      return { x: cx, y: cy };
+    };
+
+    // Expand in 4 directions
+    const left = findBound(-1, 0).x;
+    const right = findBound(1, 0).x;
+    const top = findBound(0, -1).y;
+    const bottom = findBound(0, 1).y;
+
+    const w = right - left;
+    const h = bottom - top;
+
+    // Only create if valid dimensions
+    if (w > 10 && h > 10) {
+      const selection = { x: left, y: top, w, h };
+      const extractedText = await this.extractTextFromSelectionScreenRect(selection);
+      const inferred = await this.inferTypeForSelection(selection);
+      
+      const annotation: Omit<Annotation, 'id'> = {
+        left: selection.x,
+        top: selection.y,
+        width: selection.w,
+        height: selection.h,
+        page_number: this.currentPage,
+        page_width: this.canvas.width,
+        page_height: this.canvas.height,
+        text: extractedText,
+        type: inferred ?? 'Text',
+      };
+      
+      const newAnno = annotationStore.addAnnotation(annotation);
+      annotationStore.selectAnnotation(newAnno);
     }
   }
 
@@ -554,7 +638,9 @@ export class PdfViewer {
         type: inferred ?? 'Text',
       };
       
-      annotationStore.addAnnotation(annotation);
+      const newAnno = annotationStore.addAnnotation(annotation);
+      // Auto-select the new annotation
+      annotationStore.selectAnnotation(newAnno);
     }
   }
 
